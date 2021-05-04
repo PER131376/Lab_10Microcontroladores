@@ -39,10 +39,12 @@
 //--------------------------directivas del compilador---------------------------
 
 #define _XTAL_FREQ 8000000 //__delay_ms(x)
-
+//__________________________
+// PROTOTIPOS DE FUNCIONES
+void Setup(void);       // Llamamos las configuraciones de los pines 
 //---------------------------variables------------------------------------------
-                  //a   b   c     d   e   f     g    h    i   j    k     l   m
-const char num[] = {97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108,109};                        
+                   //a   b   c   d    e    f    g    h    i    j    k     l   m
+const char num[] = {97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109};                        
 char var;
 //---------------------------interrupciones-------------------------------------
 
@@ -55,6 +57,26 @@ void __interrupt()isr(void){
 }
 
 void main(void){
+    //------------------------------loop principal----------------------------------
+    Setup();
+    var = 0;
+    while (1) {
+        __delay_ms(500);
+        if(PIR1bits.TXIF){
+            TXREG = num[var]; //num_display[0];       //cada 500ms mando un dato
+            var++;
+            if(var == 13){
+                var = 0;
+            }
+        }
+        
+    }
+    return;     //end
+}
+
+
+
+void Setup(void){
 //------------------- CONFIGURACION DE ENTRADAS Y SALIDAS ----------------------
  // Configuracion a pines Digitales  
     ANSEL = 0X00;   
@@ -90,18 +112,5 @@ void main(void){
     INTCONbits.GIE = 1;
     
    
-    //------------------------------loop principal----------------------------------
-    var = 0;
-    while (1) {
-        __delay_ms(500);
-        if(PIR1bits.TXIF){
-            TXREG = num[var]; //num_display[0];       //cada 500ms mando un dato
-            var++;
-            if(var == 13){
-                var = 0;
-            }
-        }
-        
-    }
-    return;     //end
 }
+
