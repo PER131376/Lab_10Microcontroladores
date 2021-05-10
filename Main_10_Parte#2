@@ -1,0 +1,130 @@
+/** File:   lab10.c
+ * Dispositivo:	PIC16f887
+ * Author: Selvin E. Peralta Cifuentes 
+ * Compilador:	pic-as (v2.30), MPLABX V5.45
+ * 
+ * Programa: Transmición y recepción de datos via serial
+ * Hardware: Pic 16f887, leds, resistencias, terminal serial.
+ * 
+ * Created on 08 de mayo de 2021, 16:00
+ * Last modification on 09 de mayo de 2021, 20:50
+ */
+
+// PIC16F887 Configuration Bit Settings
+// 'C' source line config statements
+//Configuración PIC16F887
+// CONFIG1
+#pragma config FOSC = INTRC_NOCLKOUT// Oscillator Selection bits (RCIO oscillator: I/O function on RA6/OSC2/CLKOUT pin, RC on RA7/OSC1/CLKIN)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled and can be enabled by SWDTEN bit of the WDTCON register)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config MCLRE = OFF      // RE3/MCLR pin function select bit (RE3/MCLR pin function is digital input, MCLR internally tied to VDD)
+#pragma config CP = OFF         // Code Protection bit (Program memory code protection is disabled)
+#pragma config CPD = OFF        // Data Code Protection bit (Data memory code protection is disabled)
+#pragma config BOREN = OFF      // Brown Out Reset Selection bits (BOR disabled)
+#pragma config IESO = OFF       // Internal External Switchover bit (Internal/External Switchover mode is disabled)
+#pragma config FCMEN = OFF      // Fail-Safe Clock Monitor Enabled bit (Fail-Safe Clock Monitor is disabled)
+#pragma config LVP = OFF        // Low Voltage Programming Enable bit (RB3 pin has digital I/O, HV on MCLR must be used for programming)
+// CONFIG2
+#pragma config BOR4V = BOR40V   // Brown-out Reset Selection bit (Brown-out Reset set to 4.0V)
+#pragma config WRT = OFF        // Flash Progra
+//*DirectivasCompliador**//
+#define _XTAL_FREQ 8000000
+//**IMPORTACION DE LIBRERIAS***
+#include <xc.h>
+#include <stdint.h>
+#include <pic16f887.h>
+//****Prototipos de funciones*****
+void Setup(void);           /*funcion principal */
+void Send_char(char bt);
+void Send_cade(char st[]);
+void Menu(void);
+//************funcionPrincipal***
+void main(void) {
+    Setup();                //funcion de configuracion principal/
+    __delay_ms(500);
+    Menu();
+    //************LoopPrincipal****
+    while(1)
+    {
+        while(!PIR1bits.RCIF);
+        char op = RCREG;
+        if(op == 49)
+        {
+            Send_cade("\rHola Mundo, Como estan?\r");
+            Menu();
+        }
+        if(op == 50)
+        {
+            Send_cade("\rIngrese un caracter para puerto A\r");
+            while(!PIR1bits.RCIF);
+            char var1 = RCREG;
+            PORTA = var1;
+            Menu();
+        }
+        if(op == 51)
+        {
+            Send_cade("\rIngrese un caracter para puerto B\r");
+            while(!PIR1bits.RCIF);
+            char var1 = RCREG;
+            PORTB = var1;
+            Menu();
+        }
+    }
+}
+//****Funciones*********
+void Setup(void)
+{ 
+    //**configuración io entradas y salidas*
+    ANSEL = 0x00;     //Digitales
+    ANSELH = 0x00;     //Salidas Digitales
+    
+    TRISA = 0x00;
+    TRISB = 0x00;
+    TRISD = 0x00;
+
+    PORTB = 0x00;
+    PORTA = 0x00;
+    PORTD = 0x00;
+    
+    //configuración del reloj (oscilador interno)
+    OSCCONbits. IRCF2 = 1; 
+    OSCCONbits. IRCF1 = 1;
+    OSCCONbits. IRCF0 = 1;  //8Mhz
+    OSCCONbits. SCS = 1;
+    //**ConfiguraciónUART TX Y RX ****
+    TXSTAbits.SYNC = 0;             //Modo asíncrono
+    TXSTAbits.BRGH = 0;             //Seleccion BAUD RATE
+    BAUDCTLbits.BRG16 = 0; 
+    
+    SPBRG = 12;                     //Registros para valor BAUD RATE
+    SPBRGH = 0; 
+    
+    RCSTAbits.SPEN = 1;         //Habilitar puerto serial asíncrono
+    RCSTAbits.RX9 = 0;
+    RCSTAbits.CREN = 1;         //Habilitar recepción de datos 
+    TXSTAbits.TXEN = 1;         //Habilitar transmision
+    
+} 
+void Send_char(char byte)
+{
+    while(!TXIF);       //Espera que envie dato
+    TXREG = byte;
+    return; 
+}
+void Send_cade(char st[])
+{
+    int i = 0;
+    while (st[i] !=0)
+    {
+        Send_char(st[i]);
+        i++;
+    }
+    return;
+}
+void Menu(void)
+{
+    Send_cade("\rSeleccione la opcion \r");
+    Send_cade("1 - Presentar cadena de caracteres\r");
+    Send_cade("2 - Mostrar en Puerto A\r");
+    Send_cade("3 - Mostrar en Puerto B\r");
+}
